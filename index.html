@@ -1,0 +1,95 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador de Resultados Futbol 7</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-shell">
+      <div class="title-block">
+        <h1>Simulador de Resultados - LNF7PC 1a División 2026</h1>
+        <p>Introduce o modifica resultados y la clasificación se actualizara automáticamente.</p>
+      </div>
+      <div class="top-actions">
+        <button id="reset-official">Restablecer resultados oficiales</button>
+        <button id="clear-pending">Borrar resultados no oficiales</button>
+      </div>
+    </div>
+    <p class="top-note hint">Desempate aplicado: puntos, DG/GF de criterio (contra equipos clasificados o con opciones, DG con maximo +/-10 por partido), enfrentamientos directos (puntos/DG/GF) y fair play.</p>
+  </header>
+
+  <main class="layout">
+    <section class="column left-column">
+      <section class="panel fixtures-panel">
+        <h2>Jornadas y Resultados</h2>
+        <div id="fixtures-root"></div>
+      </section>
+
+      <section class="panel fairplay-panel">
+        <h2>Fair Play (desempate)</h2>
+        <div id="fairplay-root"></div>
+        <p class="hint">Introduce puntos negativos acumulados (amarilla=1, doble amarilla=3, roja directa=4, amarilla+roja=5). Menos puntos negativos = mejor.</p>
+      </section>
+    </section>
+
+    <section class="column right-column">
+      <section class="panel standings-panel">
+        <h2>Clasificación</h2>
+        <div class="table-wrap">
+          <table id="standings-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Equipo</th>
+                <th>PJ</th>
+                <th>PG</th>
+                <th>PE</th>
+                <th>PP</th>
+                <th>GF</th>
+                <th>GC</th>
+                <th>DG</th>
+                <th>FP</th>
+                <th>Pts</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel tiebreak-panel">
+        <h2>Desempates Activos</h2>
+        <div id="tiebreak-root"></div>
+      </section>
+
+      <section class="panel probs-panel">
+        <h2>Probabilidades (simulación)</h2>
+        <div class="sim-controls">
+          <label for="sim-count">Simulaciones</label>
+          <input id="sim-count" type="number" min="1000" max="100000" step="1000" value="20000" />
+          <button id="run-sim">Recalcular probabilidades</button>
+        </div>
+        <div class="table-wrap">
+          <table id="prob-table">
+            <thead>
+              <tr>
+                <th>Equipo</th>
+                <th>Playoff (Top 4)</th>
+                <th>Top 2</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="hint">Las probabilidades se calculan con los resultados actuales fijados y simulación neutral de los partidos pendientes.</p>
+      </section>
+
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
