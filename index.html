@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -18,7 +18,7 @@
         <button id="clear-pending">Borrar resultados no oficiales</button>
       </div>
     </div>
-    <p class="top-note hint">Desempate aplicado: puntos, DG/GF de criterio (contra equipos clasificados o con opciones, DG con maximo +/-10 por partido), enfrentamientos directos (puntos/DG/GF) y fair play.</p>
+    <p class="top-note hint">Desempate aplicado: puntos, DG/GF de criterio (solo contra equipos en playoff, DG con maximo +/-10 por partido), enfrentamientos directos (puntos/DG/GF) y fair play.</p>
   </header>
 
   <main class="layout">
@@ -48,9 +48,9 @@
                 <th>PG</th>
                 <th>PE</th>
                 <th>PP</th>
-                <th>GF</th>
-                <th>GC</th>
-                <th>DG</th>
+                <th>GF playoff</th>
+                <th>GC playoff</th>
+                <th>DG playoff</th>
                 <th>FP</th>
                 <th>Pts</th>
               </tr>
@@ -84,7 +84,7 @@
             <tbody></tbody>
           </table>
         </div>
-        <p class="hint">Las probabilidades se calculan con los resultados actuales fijados y simulación neutral de los partidos pendientes.</p>
+        <p class="hint">Las probabilidades se calculan con los resultados actuales fijados y simulación neutral de los partidos pendientes, aplicando el desempate por DG/GF solo contra equipos en playoff.</p>
       </section>
 
     </section>
