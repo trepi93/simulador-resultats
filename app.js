@@ -1,4 +1,4 @@
-﻿const TEAMS = [
+const TEAMS = [
   "Disport FC",
   "Segunda Parte Elecnor",
   "Fundacion Intercity",
@@ -17,7 +17,13 @@ const OFFICIAL_RESULTS = {
   "J2|CD Amdda|SD Eibar": [3, 6],
   "J3|CD Amdda|Disport FC": [1, 9],
   "J3|CD Tenerife PC|Fundacion Intercity": [0, 5],
-  "J3|SD Eibar|Segunda Parte Elecnor": [1, 3]
+  "J3|SD Eibar|Segunda Parte Elecnor": [1, 3],
+  "J4|CD Amdda|CD Tenerife PC": [4,2],
+  "J4|SD Eibar|Hercules Paralimpico": [4,0],
+  "J4|Fundacion Intercity|Disport FC": [1,5],
+  "J5|SD Eibar|Disport FC":[4,2],
+  "J5|Hercules Paralimpico|CD Amdda":[4,6],
+  "J5|Segunda Parte Elecnor|CD Tenerife PC": [0,2]
 };
 
 const FIXTURES = [
@@ -123,6 +129,7 @@ function cloneTableBase() {
       gc: 0,
       dg: 0,
       gfKey: 0,
+      gcKey: 0,
       dgKey: 0,
       pts: 0
     };
@@ -205,10 +212,10 @@ function decideGroupCriterion(group, h2hMap) {
   if (!samePts) return "Puntos";
 
   const sameDgKey = group.every((r) => r.dgKey === group[0].dgKey);
-  if (!sameDgKey) return "DG de criterio";
+  if (!sameDgKey) return "DG de playoff";
 
   const sameGfKey = group.every((r) => r.gfKey === group[0].gfKey);
-  if (!sameGfKey) return "GF de criterio";
+  if (!sameGfKey) return "GF de playoff";
 
   const sameH2hPts = group.every((r) => h2hMap[r.team].pts === h2hMap[group[0].team].pts);
   if (!sameH2hPts) return "Enfrentamientos directos: puntos";
@@ -227,7 +234,7 @@ function decideGroupCriterion(group, h2hMap) {
 }
 
 function sortWithTieBreakers(rows, resultMap, includeDetails = false) {
-  const ordered = [...rows].sort((a, b) => compareBase(a, b) || a.team.localeCompare(b.team));
+  const ordered = [...rows].sort((a, b) => b.pts - a.pts || a.team.localeCompare(b.team));
   const tieGroups = [];
 
   let i = 0;
@@ -258,6 +265,7 @@ function sortWithTieBreakers(rows, resultMap, includeDetails = false) {
             gf: r.gf,
             dgKey: r.dgKey,
             gfKey: r.gfKey,
+            gcKey: r.gcKey,
             h2hPts: h2hMap[r.team].pts,
             h2hDg: h2hMap[r.team].dg,
             h2hGf: h2hMap[r.team].gf,
@@ -274,45 +282,15 @@ function sortWithTieBreakers(rows, resultMap, includeDetails = false) {
   return { rows: ordered, tieGroups };
 }
 
-function buildRemainingMatchesMap(resultMap) {
-  const remaining = {};
-  for (const t of TEAMS) remaining[t] = 0;
-
-  for (const round of FIXTURES) {
-    for (const match of round.matches) {
-      if (match.bye) continue;
-      const k = keyFor(round.round, match.home, match.away);
-      if (!resultMap.has(k)) {
-        remaining[match.home] += 1;
-        remaining[match.away] += 1;
-      }
-    }
-  }
-  return remaining;
-}
-
-function buildPlayoffContenderSet(rows, resultMap) {
-  const remaining = buildRemainingMatchesMap(resultMap);
-  const maxPtsByTeam = {};
-  for (const row of rows) {
-    maxPtsByTeam[row.team] = row.pts + (remaining[row.team] || 0) * 3;
-  }
-  const contenders = new Set();
-
-  for (const row of rows) {
-    const maxPts = maxPtsByTeam[row.team];
-    let teamsCertainlyAbove = 0;
-    for (const other of rows) {
-      if (other.team === row.team) continue;
-      if (other.pts > maxPts) teamsCertainlyAbove += 1;
-    }
-
-    const mathematicallyAlive = teamsCertainlyAbove < 4;
-    if (mathematicallyAlive) {
-      contenders.add(row.team);
-    }
-  }
-  return contenders;
+function buildCurrentPlayoffSet(rows) {
+  const provisional = [...rows].sort((a, b) =>
+    b.pts - a.pts ||
+    b.dg - a.dg ||
+    b.gf - a.gf ||
+    compareFairPlay(a, b) ||
+    a.team.localeCompare(b.team)
+  );
+  return new Set(provisional.slice(0, 4).map((r) => r.team));
 }
 
 function applyCriteriaGoalMetrics(rows, resultMap) {
@@ -320,10 +298,11 @@ function applyCriteriaGoalMetrics(rows, resultMap) {
   rows.forEach((r) => {
     r.dgKey = 0;
     r.gfKey = 0;
+    r.gcKey = 0;
     byTeam[r.team] = r;
   });
 
-  const contenders = buildPlayoffContenderSet(rows, resultMap);
+  const playoffTeams = buildCurrentPlayoffSet(rows);
   for (const round of FIXTURES) {
     for (const match of round.matches) {
       if (match.bye) continue;
@@ -335,12 +314,14 @@ function applyCriteriaGoalMetrics(rows, resultMap) {
       const ag = score[1];
       const cappedDiff = Math.max(-10, Math.min(10, hg - ag));
 
-      if (contenders.has(match.away)) {
+      if (playoffTeams.has(match.away)) {
         byTeam[match.home].gfKey += hg;
+        byTeam[match.home].gcKey += ag;
         byTeam[match.home].dgKey += cappedDiff;
       }
-      if (contenders.has(match.home)) {
+      if (playoffTeams.has(match.home)) {
         byTeam[match.away].gfKey += ag;
+        byTeam[match.away].gcKey += hg;
         byTeam[match.away].dgKey -= cappedDiff;
       }
     }
@@ -377,9 +358,9 @@ function renderStandings() {
       <td class="num">${row.pg}</td>
       <td class="num">${row.pe}</td>
       <td class="num">${row.pp}</td>
-      <td class="num">${row.gf}</td>
-      <td class="num">${row.gc}</td>
-      <td class="num">${row.dg}</td>
+      <td class="num">${row.gfKey}</td>
+      <td class="num">${row.gcKey}</td>
+      <td class="num">${row.dgKey}</td>
       <td class="num">${fp}</td>
       <td class="num"><strong>${row.pts}</strong></td>
     `;
@@ -457,33 +438,35 @@ function renderTieBreakDetails(tieGroups) {
 
     const wrap = document.createElement("div");
     wrap.className = "table-wrap";
-    const table = document.createElement("table");
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th>Equipo</th>
-          <th class="num">Pts</th>
-          <th class="num">DG global</th>
-          <th class="num">GF global</th>
-          <th class="num">Pts directos</th>
-          <th class="num">DG directo</th>
-          <th class="num">GF directo</th>
-          <th class="num">FP</th>
+	    const table = document.createElement("table");
+		    table.innerHTML = `
+		      <thead>
+		        <tr>
+		          <th>Equipo</th>
+		          <th class="num">Pts</th>
+			          <th class="num">DG playoff</th>
+			          <th class="num">GF playoff</th>
+			          <th class="num">GC playoff</th>
+			          <th class="num">Pts directos</th>
+			          <th class="num">DG directo</th>
+		          <th class="num">GF directo</th>
+	          <th class="num">FP</th>
         </tr>
       </thead>
     `;
 
     const body = document.createElement("tbody");
     group.teams.forEach((t) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${t.team}</td>
-        <td class="num">${t.pts}</td>
-        <td class="num">${t.dgKey}</td>
-        <td class="num">${t.gfKey}</td>
-        <td class="num">${t.h2hPts}</td>
-        <td class="num">${t.h2hDg}</td>
-        <td class="num">${t.h2hGf}</td>
+	      const tr = document.createElement("tr");
+		      tr.innerHTML = `
+		        <td>${t.team}</td>
+			        <td class="num">${t.pts}</td>
+			        <td class="num">${t.dgKey}</td>
+			        <td class="num">${t.gfKey}</td>
+			        <td class="num">${t.gcKey}</td>
+			        <td class="num">${t.h2hPts}</td>
+		        <td class="num">${t.h2hDg}</td>
+		        <td class="num">${t.h2hGf}</td>
         <td class="num">${t.fp}</td>
       `;
       body.appendChild(tr);
