@@ -23,7 +23,13 @@ const OFFICIAL_RESULTS = {
   "J4|Fundacion Intercity|Disport FC": [1,5],
   "J5|SD Eibar|Disport FC":[4,2],
   "J5|Hercules Paralimpico|CD Amdda":[4,6],
-  "J5|Segunda Parte Elecnor|CD Tenerife PC": [0,2]
+  "J5|Segunda Parte Elecnor|CD Tenerife PC": [0,2],
+  "J6|CD Tenerife PC|SD Eibar": [2,8],
+  "J6|Hercules Paralimpico|Fundacion Intercity": [2,1],
+  "J6|Disport FC|Segunda Parte Elecnor": [2,3],
+  "J7|SD Eibar|Fundacion Intercity":[7,2],
+  "J7|Hercules Paralimpico|Disport FC":[1,2],
+  "J7|Segunda Parte Elecnor|CD Amdda": [3,1]
 };
 
 const FIXTURES = [
@@ -515,7 +521,6 @@ function renderFixtures() {
       inHome.min = "0";
       inHome.step = "1";
       inHome.value = val ? String(val[0]) : "";
-      inHome.disabled = isOfficial;
 
       const dash = document.createElement("span");
       dash.textContent = "-";
@@ -525,7 +530,6 @@ function renderFixtures() {
       inAway.min = "0";
       inAway.step = "1";
       inAway.value = val ? String(val[1]) : "";
-      inAway.disabled = isOfficial;
 
       const away = document.createElement("div");
       away.className = "team-away";
@@ -564,43 +568,41 @@ function renderFixtures() {
         renderProbabilities();
       };
 
-      if (!isOfficial) {
-        inHome.addEventListener("input", updateState);
-        inAway.addEventListener("input", updateState);
+      inHome.addEventListener("input", updateState);
+      inAway.addEventListener("input", updateState);
 
-        one = document.createElement("button");
-        one.type = "button";
-        one.className = "quick-pick-btn";
-        one.textContent = "1";
-        one.addEventListener("click", () => {
-          inHome.value = "1";
-          inAway.value = "0";
-          updateState();
-        });
+      one = document.createElement("button");
+      one.type = "button";
+      one.className = "quick-pick-btn";
+      one.textContent = "1";
+      one.addEventListener("click", () => {
+        inHome.value = "1";
+        inAway.value = "0";
+        updateState();
+      });
 
-        draw = document.createElement("button");
-        draw.type = "button";
-        draw.className = "quick-pick-btn";
-        draw.textContent = "X";
-        draw.addEventListener("click", () => {
-          inHome.value = "0";
-          inAway.value = "0";
-          updateState();
-        });
+      draw = document.createElement("button");
+      draw.type = "button";
+      draw.className = "quick-pick-btn";
+      draw.textContent = "X";
+      draw.addEventListener("click", () => {
+        inHome.value = "0";
+        inAway.value = "0";
+        updateState();
+      });
 
-        two = document.createElement("button");
-        two.type = "button";
-        two.className = "quick-pick-btn";
-        two.textContent = "2";
-        two.addEventListener("click", () => {
-          inHome.value = "0";
-          inAway.value = "1";
-          updateState();
-        });
+      two = document.createElement("button");
+      two.type = "button";
+      two.className = "quick-pick-btn";
+      two.textContent = "2";
+      two.addEventListener("click", () => {
+        inHome.value = "0";
+        inAway.value = "1";
+        updateState();
+      });
 
-        quick.append(one, draw, two);
-        syncQuickPickState();
-      }
+      quick.append(one, draw, two);
+      syncQuickPickState();
 
       box.append(inHome, dash, inAway);
       row.append(home, box, away, quick);
@@ -699,8 +701,11 @@ document.getElementById("reset-official").addEventListener("click", () => {
 
 document.getElementById("clear-pending").addEventListener("click", () => {
   const keep = new Map();
-  for (const [k, v] of Object.entries(OFFICIAL_RESULTS)) {
-    keep.set(k, [...v]);
+  for (const k of Object.keys(OFFICIAL_RESULTS)) {
+    const current = state.results.get(k);
+    if (current) {
+      keep.set(k, [...current]);
+    }
   }
   state.results = keep;
   renderFixtures();
